@@ -1,0 +1,17 @@
+now this one is broken please fix it **test1.cpp:**
+
+```
+        FP x(32,11,string("+1.b-1023"));
+        assert(x.getExponent() == 0);
+        assert(x.getSignificand() == 0x80000000);
+        assert(x.isSubnormal());
+
+```
+
+**The test code above produced the following error(s). (#40):**
+
+```
+assert_test1: test.cpp:3: void test40(): Assertion `x.getSignificand() == 0x80000000' failed.
+Aborted (core dumped)
+and the other one.
+```

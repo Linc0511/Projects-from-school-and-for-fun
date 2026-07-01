@@ -1,0 +1,64 @@
+# requirements.txt
+Pillow>=9.0.0
+tk
+
+# setup_instructions.md
+# Literature Adventure Game Setup
+
+## Installation Requirements
+1. Python 3.7 or higher
+2. Required packages (install with pip):
+   ```
+   pip install Pillow
+   ```
+
+## File Structure
+```
+literature_adventure/
+├── main.py
+├── game_data.py
+├── requirements.txt
+├── assets/
+│   ├── american_lit_intro.jpg
+│   ├── gothic_forest.jpg
+│   ├── industrial_city.jpg
+│   ├── transcendental_plains.jpg
+│   ├── books_analysis.jpg
+│   └── literary_enlightenment.jpg
+└── README.md
+```
+
+## Creating Executable
+
+### Method 1: PyInstaller (Recommended)
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed --add-data "assets;assets" main.py
+```
+
+### Method 2: Auto-py-to-exe (GUI Method)
+```bash
+pip install auto-py-to-exe
+auto-py-to-exe
+```
+
+## Running the Game
+- **Development:** `python main.py`
+- **Executable:** Run the generated .exe file
+
+## Adding Images
+Place all images in the `assets/` folder. Supported formats:
+- .jpg, .jpeg
+- .png
+- .gif
+- .bmp
+
+Images will be automatically resized to fit the display window.
+
+## Customizing Content
+Edit `game_data.py` to:
+- Add new scenes
+- Modify existing text
+- Change image references
+- Add new choice paths
+- Create different endings
