@@ -1,0 +1,197 @@
+inc     %edi
+    #create a loop for the height
+    push    %ecx
+    xor     %ecx, %ecx
+    push    %edi
+    xor     %edi, %edi
+    #inc     %edi
+    cmp     %edx, %esi
+    je      finished
+    movb     (%ebx), %edi
+    #dereference the original array
+    get_bits:
+    cmp     $7, %edi
+    je      finished  
+    testb $1, %edi #check the bit for a one
+    jnz     found_a_1 #if found got to put in a 11 in the output
+    #found a zero put it in
+    shl     $2, %cl
+    inc     %ebx
+    inc     %eax
+    inc     %esi
+    inc     %edi
+    jmp     get_bits
+    #go through the array to find a 1
+    found_a_1:
+    #found a 1 and put 11 in the output
+    mov     $3, %cl     # Set ax to 3
+    shl     $2, %cl     # Shift the bits in AX register left by 2 positions
+    inc     %ebx
+    inc     %eax
+    inc     %esi
+    inc     %edi
+    jmp     get_bits
+    #exit the loop
+    finished:
+    mov     %cl, (%eax)
+    inc     %eax
+    mov     %cl, (%eax)
+    pop     %edi
+    pop     %ecx 
+    inc     %ecx
+    inc     %edi
+    jmp     width_loop
+# Go to done if all done
+
+
+lines 32-53
+testb   $1, (%ebx) #test to see if the current bit in %ebx is a 1
+    jnz     one_detected #go here if a one is found
+    shl     $2, %ecx #else do lines 32-34 to move in a zero instead
+    mov      %ecx, (%eax)
+    shrb     $1, (%ebx)
+    inc     %esi
+    jmp     height_loop
+    one_detected:   # lines 35-40 put a 11(binary) or 3(decimal) in %eax
+    mov     $3, %ecx     # Set ecx to 3
+    shl     $2, %ecx     # Shift the bits in ecx register left by 2 positions
+    mov     %ecx, (%eax)
+    shrb    $1, (%ebx)
+    inc     %esi
+    jmp     height_loop
+    height_done:
+    #mov     %ecx, (%eax)
+    inc     %eax
+    mov    %ecx, (%eax)
+    inc     %ebx
+    inc     %eax
+    #pop     %ecx
+    inc     %edi
+
+
+
+
+
+
+
+    Lines 33-52
+    #mov     %ecx, %edi
+    #mov     $1, %ecx
+    #test    %ecx, (%ebx)
+    #jnz     found_a_1
+    #shl     $1, %ecx
+    #shl    $2, %edi 
+    #inc     %esi
+    #jmp     height_loop
+    found_a_1:
+    #mov    $3, %edi
+    #shl     $1, %ecx   
+    #inc     %esi
+    #jmp     height_loop
+    height_done:
+    #mov     %edi, (%eax)
+    #inc     %eax
+    #pop     %edi
+    #inc     %edi
+    #pop     %ecx
+    #xor     %esi, %esi
+
+
+
+
+
+
+    lines 21-50:
+    width_loop:
+cmp     %edx, %esi
+je      done
+push    %edx
+xor     %edx, %edx
+push    %esi
+xor     %esi, %esi
+#mov     %ecx, %edi
+#mov     (%ebx), %ecx
+movb     $128, %cl
+    height_loop:
+    cmp     %ecx, %edi #compare the height value with a counter
+    je      height_done #got to height_done if the number of times are equal
+    testb   %cl, (%ebx) #if (!bitcount)
+    jnz     found_a_1
+    movb     $0, (%eax)
+    movb     $0, (%eax, %esi, 1)
+    inc     %edi
+    inc     %esi
+    #inc     %eax
+    found_a_1:
+    movb     $3, (%eax)
+    inc     %esi
+    #inc     %eax
+    height_done:
+    inc     %ebx
+    pop     %edi
+    pop     %ecx
+    xor     %esi, %esi
+    inc     %edi
+
+
+
+
+
+
+
+    35-53:
+     bit_loop:
+        cmp     $8, %edi
+        je width_loop
+        cmp     $4, %edi
+        jge     not_half_way
+        inc     %esi
+        not_half_way:
+            cmpb     (%ebx), %dl
+            jz      not_a_1
+            movb    $3, (%eax, %esi, 1)
+            shlb    $2, (%eax, %esi, 1)
+            shr     $1, %dl
+            inc     %edi
+            jmp bit_loop
+            not_a_1:
+            shlb    $2, (%eax, %esi, 1)
+            shr     $1, %dl
+            inc     %edi
+            jmp bit_loop
+
+
+
+
+
+
+39-67:
+cmp     (%ebx), %dh
+        jnz     found_a_1
+        shr     $2, %dh
+        shr     $2, %dl
+        inc     %cl
+        jmp     make_bits_double
+        found_a_1:
+        or      %dl, %ch
+        shr     $2, %dh
+        shr     $2, %dl
+        inc     %cl
+        jmp     make_bits_double
+
+        make_bits_double:
+        cmp     $8, %cl
+        je      width_loop
+        cmp     $4, %cl
+        jg      print_greater
+        mov     %ch, (%eax)
+        inc     %eax
+        inc     %eax
+        mov     %ch, (%eax)
+        dec     %eax
+        print_greater:
+        mov     %ch, (%eax)
+        inc     %eax
+        inc     %eax
+        mov     %ch, (%eax)
+        dec     %eax

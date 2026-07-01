@@ -1,0 +1,317 @@
+#include <stdint.h>
+
+#define FLAG_POSITIVE       1
+#define FLAG_ZERO           2
+#define FLAG_NEGATIVE       4
+#define FLAG_INT_ENABLE     8
+
+#define INT_NONE            -1
+
+#define RESULT_CONTINUE     0
+#define RESULT_ILLEGAL      1
+#define RESULT_UNALIGNED    2
+
+typedef struct vm_t {
+    uint16_t    reg[8];
+    uint16_t    flags; 
+    uint8_t     memory[64*1024];
+} vm_t;
+
+uint8_t get_instruction_byte (vm_t* vm) {
+    uint8_t instruction_byte = vm->memory[vm->reg[0]];
+    vm->reg[0]++;
+    return instruction_byte;
+}
+
+uint16_t get_word (vm_t* vm) {
+    uint8_t low_bits = get_instruction_byte(vm);
+    uint8_t high_bits = get_instruction_byte(vm);
+    
+    uint16_t num = low_bits + (high_bits << 8);
+    return num;
+}
+
+void push_stack (vm_t* vm, uint8_t value) {
+    vm->reg[7]--;
+    vm->memory[vm->reg[7]] = value;
+    return;
+}
+
+uint8_t pop_stack (vm_t* vm) {
+    uint8_t ret_value = vm->memory[vm->reg[7]];
+    vm->reg[7]++;
+    return ret_value;
+}
+
+void push_word (vm_t* vm, uint16_t value) {
+    uint8_t little_end = value & 0xFF;
+    uint8_t big_end = value >> 8;
+
+    push_stack(vm, big_end);
+    push_stack(vm, little_end);
+}
+
+uint16_t pop_word (vm_t* vm) {
+    uint8_t little_end = pop_stack(vm);
+    uint8_t big_end = pop_stack(vm);
+
+    uint16_t r = little_end + (big_end << 8);
+    return r;
+}
+
+void update_flags(vm_t* vm, uint16_t result) {
+    int16_t r = (int16_t) result;
+    vm->flags &= ~(7);
+    
+    if (r > 0) { // if positive
+        vm->flags |= FLAG_POSITIVE;
+    } 
+    if (!r) { // if 0
+        vm->flags |= FLAG_ZERO;
+    }
+    if (r < 0) { // if negative
+        vm->flags |= FLAG_NEGATIVE;
+    }
+}
+
+typedef struct Memory {
+    uint8_t is_word;
+    uint16_t address;
+    
+} Memory;
+
+Memory get_memory_address (vm_t* vm) {
+    uint8_t instruction_byte = get_instruction_byte(vm);
+    uint8_t opcode = instruction_byte >> 6;
+    uint8_t wid = (instruction_byte & 56) >> 3;
+    uint8_t reg = instruction_byte & 7;
+    
+    Memory mem_info;
+    mem_info.is_word = 0;
+
+    if (wid & 4) {
+        mem_info.is_word = 1;
+    }
+
+    if (wid & 1) {
+        vm->reg[reg] -= (1 + mem_info.is_word);
+    }
+
+    if (opcode == 0) {
+        mem_info.address = vm->reg[reg];
+    } else if (opcode == 1) {
+        mem_info.address = vm->reg[reg] + vm->reg[6];
+    } else if (opcode == 2) {
+        mem_info.address = vm->reg[reg] + vm->reg[7];
+    } else if (opcode == 3) {
+        mem_info.address = vm->reg[reg] + get_word(vm);
+    }
+
+    if (wid & 2) {
+        vm->reg[reg] += (1 + mem_info.is_word);
+    }
+    
+    return mem_info;
+    
+}
+
+
+
+int execute_instruction(vm_t* vm) {
+    uint8_t instruction_byte = get_instruction_byte(vm);
+    
+    uint8_t opcode = instruction_byte >> 6;
+    uint8_t reg1 = (instruction_byte & 56) >> 3;
+    uint8_t reg2 = instruction_byte & 7;
+    
+    if (!reg1) {
+        if (!reg2) {
+            if (opcode == 0) {
+                //return from func call
+                if ((vm->reg[7] & 1) != 0) {
+                    return RESULT_UNALIGNED;
+                }
+                
+                uint16_t ret_address = pop_word(vm);
+                vm->reg[0] = ret_address;
+
+                if ((vm->flags & 8) == 0) {
+                    vm->flags = pop_word(vm);
+                }
+
+            } else if (opcode == 1) {
+                //cond. jump relative
+                instruction_byte = get_instruction_byte(vm);
+                uint8_t nzp = instruction_byte >> 5;
+                int8_t offset = instruction_byte & 31;
+                offset <<= 3;
+                offset >>= 3;
+
+                if (nzp & vm->flags) {
+                    vm->reg[0] += offset;
+                }
+
+            } else if (opcode == 2) {
+                //jmp to absolute address
+                uint16_t address = get_word(vm);
+
+                vm->reg[0] = address;
+
+
+            } else if (opcode == 3) {
+                //call to absolute address
+                //make sure to push reg[0] first
+                if ((vm->reg[7] & 1) != 0) {
+                    return RESULT_UNALIGNED;
+                }
+                
+                push_word(vm, vm->reg[0]);
+                uint16_t address = get_word(vm);
+                vm->reg[0] = address;
+
+            }
+        }
+        if (reg2) {
+            if (opcode == 0) {
+                //load reg2 from memory
+                
+                Memory mem_info = get_memory_address(vm);
+
+                if (mem_info.is_word) {
+                    if ((mem_info.address & 1) != 0) {
+                        return RESULT_UNALIGNED;
+                    }
+                    uint8_t little_bits = vm->memory[mem_info.address];
+                    uint8_t big_bits = vm->memory[mem_info.address + 1];
+                    uint16_t total = little_bits + (big_bits << 8);
+                    vm->reg[reg2] = total;
+                } else {
+                    vm->reg[reg2] = vm->memory[mem_info.address];
+                }
+
+                
+            } else if (opcode == 1) {
+                //store reg2 to memory
+                Memory mem_info = get_memory_address(vm);
+
+                if (mem_info.is_word) {
+                    if ((mem_info.address & 1) != 0) {
+                        return RESULT_UNALIGNED;
+                    }
+                    uint8_t little_bits = vm->reg[reg2] & 255;
+                    uint8_t big_bits = vm->reg[reg2] >> 8;
+
+                    vm->memory[mem_info.address] = little_bits;
+                    vm->memory[mem_info.address + 1] = big_bits;
+                } else {
+                    vm->memory[mem_info.address] = vm->reg[reg2];
+                }
+
+            } else if (opcode == 2) {
+                //store address to reg2
+                Memory mem_info = get_memory_address(vm);
+
+                vm->reg[reg2] = mem_info.address;
+
+            } else if (opcode == 3) {
+                //illegal instruction
+                return RESULT_ILLEGAL;
+            }
+        }
+    }
+    
+    if (reg1) {
+        if (!reg2) {
+            if (opcode == 0) {
+                //load immediate to register DDD
+                uint16_t immediate = get_word(vm);
+                vm->reg[reg1] = immediate;
+                update_flags(vm,vm->reg[reg1]);
+
+            } else if (opcode == 1) {
+                //shift reg RRR
+                instruction_byte = get_instruction_byte(vm);
+                uint8_t dar = instruction_byte >> 5;
+                uint8_t count = instruction_byte & 31;
+                
+                uint16_t shift_by = count;
+                
+                if (dar & 1) {
+                    if (count > 7) {
+                        return RESULT_ILLEGAL;
+                    }
+                    shift_by = vm->reg[count];
+                }
+
+                if (dar & 2) { // arithmetic
+                    if (dar & 4) { // direction
+                        int16_t r = (int16_t) vm->reg[reg1];
+                        r >>= shift_by;
+                        vm->reg[reg1] = r;
+                    } else {
+                        vm->reg[reg1] <<= shift_by;
+                    }
+                } else { // not arithmetic
+                    if (dar & 4) { // direction
+                        vm->reg[reg1] >>= shift_by;
+                    } else {
+                        vm->reg[reg1] <<= shift_by;
+                    }
+                }
+
+                update_flags(vm,vm->reg[reg1]);
+
+            } else if (opcode == 2) {
+                //complement reg RRR
+                vm->reg[reg1] = ~(vm->reg[reg1]);
+                update_flags(vm,vm->reg[reg1]);
+            } else if (opcode == 3) {
+                //negate register RRR
+                vm->reg[reg1] = -(vm->reg[reg1]);
+                update_flags(vm,vm->reg[reg1]);
+            }
+        }
+        
+        if (reg2) {
+            if (opcode == 0) {
+                //mov SSS -> DDD
+                vm->reg[reg1] = vm->reg[reg2];
+                update_flags(vm,vm->reg[reg1]);
+            } else if (opcode == 1) {
+                //add SSS -> DDD
+                vm->reg[reg1] += vm->reg[reg2];
+                update_flags(vm,vm->reg[reg1]);
+            } else if (opcode == 2) {
+                //and SSS -> DDD
+                vm->reg[reg1] &= vm->reg[reg2];
+                update_flags(vm,vm->reg[reg1]);
+            } else if (opcode == 3) {
+                //xor SSS -> DDD
+                vm->reg[reg1] ^= vm->reg[reg2];
+                update_flags(vm,vm->reg[reg1]);
+            }
+        }
+    }
+    return RESULT_CONTINUE;
+}
+
+int step(vm_t* vm, int interrupt_num) {
+    // if interrupts are enabled
+    if (vm->flags & 8 && interrupt_num != INT_NONE) {
+        if ((vm->reg[7] & 1) != 0) {
+            return RESULT_UNALIGNED;
+        }
+        
+        uint16_t int_address = vm->memory[0xFFF0 + interrupt_num * 2];
+        int_address += (vm->memory[0xFFF0 + interrupt_num * 2 + 1]) << 8;
+        
+        push_word(vm, vm->flags);
+        push_word(vm, vm->reg[0]);
+        vm->flags &= ~(8);
+        
+        vm->reg[0] = int_address;
+        return RESULT_CONTINUE;
+    }
+    
+    return execute_instruction(vm);
+}

@@ -1,0 +1,152 @@
+.section .data
+format_string1:
+    .asciz "fibonacci(%d) = %d\n"
+
+format_string2:
+    .asciz "fibonacci(%d) = %d + %d\n"
+.text
+.globl fib
+
+fib:
+    push    %ebp
+    mov     %esp, %ebp
+    #push    %ebx
+    push    %esi
+
+    mov     8(%ebp), %eax
+    #mov     12(%ebp), %ebx
+
+    cmpl    $2, %eax
+    jl      boolean_is_true1    
+    movl    %eax, %edx
+recursion:
+    
+    dec     %edx              # n-1
+    push    %edx
+    push    %edx
+    call    fib
+    addl    $4, %esp
+    
+    pop     %edx
+    movl    %eax, %ecx        # Store the result of fib(n-1) in ecx
+    
+
+    
+    dec     %edx         # n-2
+    push    %ecx
+    push    %edx
+    call    fib
+    
+    add     $4, %esp
+    cmpl    $0, 12(%ebp)
+    jz      skip
+    # Load the format string address into ebx
+    movl    $format_string2, %esi
+    push    %ecx
+    pop     %ecx
+    push    %ebx
+    mov     8(%ebp), %ebx
+
+    pushl   %ecx           # Push n2
+    pushl   %eax           # Push n1
+    pushl   %ebx           # Push n
+    pushl   %esi           # Push the format string
+
+    call    printf
+    pop %edx
+    popl %ecx
+    popl %eax
+    popl %edx
+    popl %esi
+skip:
+    pop     %ecx
+
+    
+    add     %ecx, %eax        # Add the results of fib(n-1) and fib(n-2)
+    
+    pop     %esi
+    #pop     %ebx
+    pop     %ebp
+    ret     
+boolean_is_true1:
+    cmpl    $0, 12(%ebp)
+    jz      done 
+    # Load the format string address into ebx
+    movl    $format_string1, %esi
+
+    pushl   %eax           # Push the result to print
+    pushl   %eax           # Push the boolean variable
+    pushl   %esi           # Push the format string
+
+    call    printf
+
+    popl %eax
+    popl %eax
+    popl %esi
+
+
+
+done:
+    #add     %ecx, %eax        # Add the results of fib(n-1) and fib(n-2)
+    pop     %esi
+    #pop     %ebx
+    pop     %ebp
+    ret
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    cmpl    $0, 12(%ebp)
+    jz      skip
+    # Load the format string address into ebx
+    movl    $format_string2, %esi
+    push    %ecx
+    pop     %ecx
+    push    %ebx
+    mov     8(%ebp), %ebx
+
+    pushl   %ecx           # Push n2
+    pushl   %eax           # Push n1
+    pushl   %ebx           # Push n
+    pushl   %esi           # Push the format string
+
+    call    printf
+    pop %edx
+    popl %ecx
+    popl %eax
+    popl %edx
+    popl %esi
+skip:
+
+
+
+
+    

@@ -1,0 +1,37 @@
+section .data
+    ; No data section needed for this code
+
+section .text
+global fib
+
+fib:
+    push ebp              ; Save the base pointer
+    mov ebp, esp          ; Set up a new base pointer
+
+    mov ecx, [ebp + 8]   ; Load n from the function argument
+    cmp ecx, 2            ; Compare n with 2
+    jl .less_than_2      ; If n < 2, return n
+
+    ; Initialize variables
+    mov eax, 0            ; fn1 = 0
+    mov edx, 1            ; fn = 1
+
+.loop:
+    cmp ecx, 2            ; Compare n with 2
+    jl .done              ; If n < 2, exit the loop
+
+    ; Calculate the next Fibonacci number
+    add eax, edx          ; temp = fn1 + fn
+    mov ebx, edx          ; Save fn in ebx
+    mov edx, eax          ; fn = temp
+    mov eax, ebx          ; fn1 = fn
+    dec ecx               ; Decrement n
+    jmp .loop
+
+.done:
+    pop ebp               ; Restore the base pointer
+    ret                   ; Return
+
+.less_than_2:
+    pop ebp               ; Restore the base pointer
+    ret                   ; Return

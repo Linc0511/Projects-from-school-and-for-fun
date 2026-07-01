@@ -1,0 +1,193 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Function to print a fixed-width string with padding
+void print_fixed_width(char* str) {
+    printf(" %-3s |", str);
+}
+void print_header(int num_inputs, char* expressions[]) {
+    // Print the input column headers
+    for (int i = 0; i < num_inputs; i++) {
+        if (strlen(expressions[i]) == 1)
+        printf(" %c |", 'A' + i);
+    }
+    
+    // Print the expression column headers
+    for (int i = 0; i < num_inputs + 1; i++) {
+        if (strlen(expressions[i]) == 2) {
+            printf("  %s ", expressions[i]);
+        }
+        else if (strlen(expressions[i]) == 3) {
+            printf(" %s ", expressions[i]);
+        }
+        printf("|");
+    }
+    
+    printf("\n");
+}
+
+void generate_truth_table(int num_inputs, char* expressions) {
+    int num_rows = 1 << num_inputs;  // Calculate the number of rows (2^n)
+
+    for (int row = 0; row < num_rows; row++) {
+        for (int input = -1; input < num_inputs; input++) {
+            bool value = (row & (1 << input)) != 0; // Extract the bit value for the input
+            printf("  %d  |", value);
+        }
+
+        // Evaluate and print the result for each expression column
+        for (int exp = 0; exp < num_inputs; exp++) {
+            char left_operand = expressions[exp] & 0xF0;
+            char operator = expressions[exp] & 0x0F;
+
+            int left_index = left_operand - 'A';
+            int right_index = operator - 'A';
+
+            bool result;
+            if (operator == '*') {
+                result = ((row & (1 << left_index)) != 0) && ((row & (1 << right_index)) != 0);
+            } else if (operator == '+') {
+                result = ((row & (1 << left_index)) != 0) || ((row & (1 << right_index)) != 0);
+            } else if (operator == '^') {
+                result = (((row & (1 << left_index)) != 0) ^ ((row & (1 << right_index)) != 0));
+            }
+             else if (operator == '~') {
+                result = (((row & (1 << left_index)) != 0) ^ ((row & (1 << right_index)) != 0));
+            } 
+
+            // Print '0' or '1' based on the result
+            char result_char = result ? '1' : '0';
+            printf("  %c  |", result_char);
+        }
+        printf("\n");
+    }
+}
+
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <num_inputs> <expression1> <expression2> ...\n", argv[0]);
+        return 1;
+    }
+    int num_inputs = atoi(argv[1]);
+
+    if (num_inputs < 1 || num_inputs > 26) {
+        printf("Number of inputs must be between 1 and 26.\n");
+        return 1;
+    }
+
+    for (int i = 0; i < num_inputs; i++) {
+        printf("  %c  |", 'A' + i);
+    }
+    print_header(num_inputs, argv + 2);
+    //printf("\n");
+    
+
+    generate_truth_table(num_inputs, argv[2]);
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+for (int i = 2; i < argc; i++) {
+        if (strlen(argv[i]) == 2) {
+            printf("  %s ", argv[i]);
+        }
+        else if (strlen(argv[i]) == 3) {
+            printf(" %s ", argv[i]);
+        }
+        printf("|");
+    }
+    printf("\n");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Compute and store the boolean values for input variables
+        for (int i = 0; i < num_inputs; i++) {
+            input_values[i] = (row >> i) & 1;
+        }
+
+        // Print the boolean values for input variables (A, B, C, ...)
+        for (int i = 0; i < num_inputs; i++) {
+            printf("  %d  |", input_values[i]);
+        }
+
+        // Evaluate and print the expressions (A*B, C+D, etc.)
+        for (int i = 0; i < argc; i++) {
+            char *expression = argv[i];
+            if (strlen(expression) == 3) {
+                printf ("input %d ", input_values[i]);
+                char op = expression[1];
+                char var1 = expression[0];
+                char var2 = expression[2];
+                //printf ("var1 %d ", var1);
+                printf ("var2 %d ", var2);
+
+                // Calculate the indices based on the variable characters (A, B, C, ...)
+                int index1 = var1 - 'A';
+                int index2 = var2 - 'A';
+                //printf ("i1 %d ", index1);
+                printf ("i2 %d ", index2);
+                bool val1 = input_values[index1];  // Get boolean value of var1
+                //printf ("val1 %d ", val1);
+                bool val2 = input_values[index2];  // Get boolean value of var2
+                //printf ("val2 %d ", val2);
+                //printf ("iv1 %d ", input_values[index1]);
+                //printf ("iv2 %d ", input_values[index2]);
+                bool result = evaluate(op, val1, val2);
+                input_values[i] = result;
+                //printf ("input %d ", input_values[i]);
+                printf("  %d  |", result);
+            }
+            else if (strlen(expression) == 2) {
+                char op = expression[0];
+                char var1 = expression[1];
+                //printf ("var1~ %d ", var1);
+                bool val1 = input_values[var1 - 'A'];  // Get boolean value of var1
+                bool result = evaluate(op, val1, true);
+                input_values[i] = result;
+                //printf ("%d", val1);
+                printf("  %d  |", result);
+            }
+        }

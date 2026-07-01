@@ -1,0 +1,11 @@
+add         +
+multiply    *
+leftshift   <<
+rightshift  >>
+xor         ^
+and         &
+subtract    -
+modulus     %
+divide      /
+or          |
+
