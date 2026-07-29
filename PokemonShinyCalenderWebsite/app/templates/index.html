@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shiny Hunting Calendar</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+  <header class="site-header">
+    <h1>✨ Shiny Hunting Calendar</h1>
+    <nav>
+      <a href="#current-hunt">Current Hunt</a>
+      <a href="#anniversaries">Anniversaries</a>
+      <a href="#facts">Facts</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="current-hunt">
+      <h2>Current Hunt</h2>
+      <!-- TODO: render active hunt card(s) here, pulled from /api/hunts -->
+      <div class="placeholder-card">No hunt tracker built yet.</div>
+    </section>
+
+    <section id="anniversaries">
+      <h2>Shiny Anniversaries</h2>
+      <!-- TODO: render calendar / upcoming anniversary list, pulled from /api/anniversaries -->
+      <div class="placeholder-card">No anniversary calendar built yet.</div>
+    </section>
+
+    <section id="facts">
+      <h2>Hunt Facts</h2>
+      <!-- TODO: render a fact or fact list, pulled from /api/facts -->
+      <div class="placeholder-card">No facts feature built yet.</div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Local dev build — running in Docker on port 5000</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

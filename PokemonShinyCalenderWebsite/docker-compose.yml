@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  web:
+    build: ./app
+    container_name: shiny-calendar
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount source so code changes reload without rebuilding the image
+      - ./app:/app
+      # Persist the SQLite DB file outside the container
+      - ./data:/data
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DATABASE_PATH=/data/shiny_calendar.db
+    restart: unless-stopped
